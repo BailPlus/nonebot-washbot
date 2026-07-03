@@ -1,6 +1,6 @@
 import traceback
 
-from httpx import URL, AsyncClient
+from httpx import URL, AsyncClient, RequestError
 from nonebot import on_command
 from nonebot.adapters import Message
 from nonebot.adapters.onebot.v11 import GroupMessageEvent
@@ -47,9 +47,9 @@ async def _(matcher: Matcher, event: GroupMessageEvent, level: str = ArgPlainTex
         resp = await client.post(
             URL(config.WASH_MACHINE_URL).copy_with(path="/" + level)
         )
-    except Exception:
-        exc = traceback.format_exc()
-        await matcher.finish("执行失败：\n" + exc)
+    except RequestError as e:
+        traceback.print_exc()
+        await matcher.finish(f"执行失败：与洗衣机的连接可能已断开\n{repr(e)}")
 
     if resp.status_code != 200:
         await matcher.finish(f"执行失败：错误的状态码：{resp.status_code}")

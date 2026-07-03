@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-washbot"
-version = "1.0"
+version = "1.0.2"
 description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "Bail", email = "2915289604@qq.com" }]
