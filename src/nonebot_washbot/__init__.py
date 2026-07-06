@@ -37,6 +37,8 @@ async def _(matcher: Matcher, event: GroupMessageEvent, level: str = ArgPlainTex
     if event.group_id != config.WASHBOT_TARGET_GROUP_ID:
         await matcher.finish()
 
+    if level.startswith("/wash "):
+        level = level[6:]
     level = level.strip()
     if not level:
         await wash_cmd.reject(f"请输入洗衣等级{VALID_LEVELS}")
