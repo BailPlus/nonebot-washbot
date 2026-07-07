@@ -1,4 +1,5 @@
 import traceback
+from datetime import datetime, timedelta
 
 from httpx import URL, AsyncClient, RequestError
 from nonebot import on_command
@@ -16,10 +17,11 @@ __plugin_meta__ = PluginMetadata(
     usage="",
     config=Config,
 )
-VALID_LEVELS = ["1", "3", "4", "4p", "6"]
+VALID_LEVELS = {"1": 7, "3": 0, "4": 0, "4p": 41, "6": 60}  # {洗衣模式: 所需分钟}
 
 wash_cmd = on_command("wash")
 client = AsyncClient()
+wash_after = datetime.now()  # 在此时间后才可以洗衣服
 
 
 @wash_cmd.handle()
@@ -32,8 +34,9 @@ async def _(matcher: Matcher, event: GroupMessageEvent, arg: Message = CommandAr
     matcher.set_arg("level", arg)
 
 
-@wash_cmd.got("level", prompt=f"请输入洗衣等级{VALID_LEVELS}")
+@wash_cmd.got("level", prompt=f"请输入洗衣等级{list(VALID_LEVELS)}")
 async def _(matcher: Matcher, event: GroupMessageEvent, level: str = ArgPlainText()):
+    global wash_after
     if event.group_id != config.WASHBOT_TARGET_GROUP_ID:
         await matcher.finish()
 
@@ -41,9 +44,17 @@ async def _(matcher: Matcher, event: GroupMessageEvent, level: str = ArgPlainTex
         level = level[6:]
     level = level.strip()
     if not level:
-        await wash_cmd.reject(f"请输入洗衣等级{VALID_LEVELS}")
+        await wash_cmd.reject(f"请输入洗衣等级{list(VALID_LEVELS)}")
     elif level not in VALID_LEVELS:
-        await wash_cmd.finish(f"无效的洗衣等级。可选项：{VALID_LEVELS}。请重新输入命令")
+        await wash_cmd.finish(
+            f"无效的洗衣等级。可选项：{list(VALID_LEVELS)}。请重新输入命令"
+        )
+
+    now = datetime.now()
+    if now < wash_after:
+        await wash_cmd.finish(
+            f"洗衣机正在工作中。请于{int((wash_after - now).total_seconds() // 60) or '不足1'}分钟后重试"
+        )
 
     try:
         resp = await client.post(
@@ -52,8 +63,9 @@ async def _(matcher: Matcher, event: GroupMessageEvent, level: str = ArgPlainTex
     except RequestError as e:
         traceback.print_exc()
         await matcher.finish(f"执行失败：与洗衣机的连接可能已断开\n{repr(e)}")
-
     if resp.status_code != 200:
         await matcher.finish(f"执行失败：错误的状态码：{resp.status_code}")
 
-    await matcher.finish("执行成功")
+    wash_need_minutes = VALID_LEVELS[level]
+    wash_after = now + timedelta(minutes=wash_need_minutes)
+    await matcher.finish(f"执行成功，预计需要{wash_need_minutes}分钟")
