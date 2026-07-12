@@ -17,7 +17,7 @@ __plugin_meta__ = PluginMetadata(
     usage="",
     config=Config,
 )
-VALID_LEVELS = {"1": 7, "3": 0, "4": 0, "4p": 41, "6": 60}  # {洗衣模式: 所需分钟}
+VALID_LEVELS = {"1": 7, "3": 23, "4p": 41, "6": 60}  # {洗衣模式: 所需分钟}
 
 wash_cmd = on_command("wash")
 client = AsyncClient()
