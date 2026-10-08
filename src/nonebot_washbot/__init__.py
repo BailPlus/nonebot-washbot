@@ -33,6 +33,11 @@ wash_after = datetime.now().astimezone()  # 在此时间后才可以洗衣服
 async def _(matcher: Matcher, event: GroupMessageEvent, arg: Message = CommandArg()):  # noqa: B008
     if event.group_id != config.WASHBOT_TARGET_GROUP_ID:
         await matcher.finish()
+    if (
+        config.WASHBOT_USER_WHITELIST
+        and event.get_user_id() not in config.WASHBOT_USER_WHITELIST
+    ):
+        await matcher.finish("Permission denied")
     argstr = arg.extract_plain_text().strip()
     if not argstr:
         return
